@@ -4,6 +4,7 @@ import (
 	bin "encoding/binary"
 	"fmt"
 	"io"
+	"math/big"
 	"math/rand"
 
 	"github.com/hyperledger/burrow/acm"
@@ -47,7 +48,7 @@ func (m *MockSource) Recv() (*Dump, error) {
 
 		row.Account = &acm.Account{
 			Address: addr,
-			Balance: m.rand.Uint64(),
+			Balance: big.NewInt(int64(m.rand.Uint64())),
 		}
 
 		if m.Accounts%2 > 0 {

@@ -2,6 +2,7 @@ package genesis
 
 import (
 	"fmt"
+	"math/big"
 	"math/rand"
 	"time"
 
@@ -30,7 +31,7 @@ func (dg *deterministicGenesis) GenesisDoc(numAccounts int, numValidators int) (
 		acc := Account{
 			BasicAccount: BasicAccount{
 				Address: account.GetAddress(),
-				Amount:  account.Balance,
+				Amount:  account.Balance.Uint64(),
 			},
 			Permissions: defaultPerms.Clone(), // This will get copied into each state.Account.
 		}
@@ -88,9 +89,9 @@ func (dg *deterministicGenesis) Account(minBalance uint64) (*acm.Account, *acm.P
 		Address:     privAccount.Address,
 		PublicKey:   &privAccount.PublicKey,
 		Sequence:    uint64(dg.random.Int()),
-		Balance:     minBalance,
+		Balance:     big.NewInt(int64(minBalance)),
 		Permissions: perms,
 	}
-	acc.Balance += uint64(dg.random.Int())
+	acc.Balance = acc.Balance.Add(acc.Balance, big.NewInt(int64(dg.random.Int())))
 	return acc, privAccount.PrivateAccount()
 }

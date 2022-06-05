@@ -36,7 +36,7 @@ func (ctx *UnbondContext) Execute(txe *exec.TxExecution, p payload.Payload) erro
 		return err
 	}
 
-	err = account.AddToBalance(power.Uint64())
+	err = account.AddToBalance(power)
 	if err != nil {
 		return err
 	}

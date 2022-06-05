@@ -45,10 +45,10 @@ func (ctx *BondContext) Execute(txe *exec.TxExecution, p payload.Payload) error 
 	}
 
 	// check account has enough to bond
-	amount := ctx.tx.Input.GetAmount()
-	if amount == 0 {
+	amount := big.NewInt(int64(ctx.tx.Input.GetAmount()))
+	if amount.Cmp(big.NewInt(0)) == 0 {
 		return fmt.Errorf("nothing to bond")
-	} else if account.Balance < amount {
+	} else if account.Balance.Cmp(amount) == -1 {
 		return fmt.Errorf("insufficient funds, account %s only has balance %v and "+
 			"we are deducting %v", account.Address, account.Balance, amount)
 	}

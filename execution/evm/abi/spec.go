@@ -145,7 +145,7 @@ func (spec *Spec) Pack(fname string, args ...interface{}) ([]byte, *FunctionSpec
 		if spec.Constructor.Inputs != nil {
 			funcSpec = spec.Constructor
 		} else {
-			return nil, nil, fmt.Errorf("contract does not have a constructor")
+			funcSpec = &FunctionSpec{}
 		}
 	}
 

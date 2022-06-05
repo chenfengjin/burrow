@@ -2,6 +2,7 @@ package contexts
 
 import (
 	"fmt"
+	"math/big"
 
 	"regexp"
 
@@ -166,7 +167,7 @@ func (ctx *NameContext) Execute(txe *exec.TxExecution, p payload.Payload) error 
 		"old_sequence", inAcc.Sequence,
 		"new_sequence", inAcc.Sequence+1)
 
-	err = inAcc.SubtractFromBalance(value)
+	err = inAcc.SubtractFromBalance(big.NewInt(int64(value)))
 	if err != nil {
 		return errors.Errorf(errors.Codes.InsufficientFunds,
 			"Input account does not have sufficient balance to cover input amount: %v", ctx.tx.Input)

@@ -2,6 +2,7 @@ package acmstate
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/binary"
@@ -90,6 +91,8 @@ type AccountUpdater interface {
 	UpdateAccount(updatedAccount *acm.Account) error
 	// Remove the account at address
 	RemoveAccount(address crypto.Address) error
+	// Transfer
+	Transfer(from, to crypto.Address, amount *big.Int) error
 }
 
 type StorageGetter interface {

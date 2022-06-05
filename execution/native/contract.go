@@ -5,6 +5,7 @@ package native
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/acm/acmstate"
@@ -94,7 +95,8 @@ func NewContract(name string, comment string, logger *logging.Logger, fs ...Func
 
 // Dispatch is designed to be called from the EVM once a native contract
 // has been selected.
-func (c *Contract) Call(state engine.State, params engine.CallParams) (output []byte, err error) {
+func (c *Contract) Call(state engine.State, params engine.CallParams,
+	transfer func(from, to crypto.Address, amount *big.Int) error) (output []byte, err error) {
 	if len(params.Input) < abi.FunctionIDSize {
 		return nil, errors.Errorf(errors.Codes.NativeFunction,
 			"Burrow Native dispatch requires a 4-byte function identifier but arguments are only %v bytes long",
@@ -110,7 +112,7 @@ func (c *Contract) Call(state engine.State, params engine.CallParams) (output []
 
 	params.Input = params.Input[abi.FunctionIDSize:]
 
-	return function.Call(state, params)
+	return function.Call(state, params, transfer)
 }
 
 func (c *Contract) SetExternals(externals engine.Dispatcher) {

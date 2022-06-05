@@ -129,17 +129,17 @@ func Transfer(st acmstate.ReaderWriter, from, to crypto.Address, amount *big.Int
 	if err != nil {
 		return err
 	}
-	if new(big.Int).SetUint64(acc.Balance).Cmp(amount) < 0 {
+	if new(big.Int).SetUint64(acc.Balance.Uint64()).Cmp(amount) < 0 {
 		return errors.Codes.InsufficientBalance
 	}
 	err = UpdateAccount(st, from, func(account *acm.Account) error {
-		return account.SubtractFromBalance(amount.Uint64())
+		return account.SubtractFromBalance(amount)
 	})
 	if err != nil {
 		return err
 	}
 	return UpdateAccount(st, to, func(account *acm.Account) error {
-		return account.AddToBalance(amount.Uint64())
+		return account.AddToBalance(amount)
 	})
 }
 

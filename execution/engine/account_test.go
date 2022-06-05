@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/hyperledger/burrow/acm"
@@ -72,7 +73,7 @@ func TestState_NewCache(t *testing.T) {
 	cache, err = cache.NewFrame()
 	require.NoError(t, err)
 	err = UpdateAccount(cache, address, func(account *acm.Account) error {
-		return account.AddToBalance(amt)
+		return account.AddToBalance(big.NewInt(int64(amt)))
 	})
 	require.Error(t, err)
 	require.Equal(t, errors.Codes.IllegalWrite, errors.GetCode(err))
@@ -80,7 +81,7 @@ func TestState_NewCache(t *testing.T) {
 
 func addToBalance(t testing.TB, st acmstate.ReaderWriter, address crypto.Address, amt uint64) {
 	err := UpdateAccount(st, address, func(account *acm.Account) error {
-		return account.AddToBalance(amt)
+		return account.AddToBalance(big.NewInt(int64(amt)))
 	})
 	require.NoError(t, err)
 }

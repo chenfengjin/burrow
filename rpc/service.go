@@ -241,7 +241,7 @@ func (s *Service) AccountHumanReadable(address crypto.Address) (*ResultAccountHu
 			Address:     acc.GetAddress(),
 			PublicKey:   acc.PublicKey,
 			Sequence:    acc.Sequence,
-			Balance:     acc.Balance,
+			Balance:     acc.Balance.Uint64(),
 			Code:        tokens,
 			Permissions: perms,
 			Roles:       acc.Permissions.Roles,

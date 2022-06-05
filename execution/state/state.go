@@ -5,7 +5,9 @@ package state
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/hyperledger/burrow/execution/registry"
@@ -40,6 +42,7 @@ const (
 var _ acmstate.IterableReader = &State{}
 var _ names.IterableReader = &State{}
 var _ Updatable = &writeState{}
+var ErrNotImplemented = errors.New("not implemented")
 
 type KeyFormatStore struct {
 	Account   *storage.MustKeyFormat
@@ -107,6 +110,10 @@ type writeState struct {
 }
 
 // This is the immutable merklised read state at a given finalised height
+func (w *writeState) Transfer(address crypto.Address, address2 crypto.Address, amount *big.Int) error {
+	return ErrNotImplemented
+}
+
 type ImmutableState struct {
 	Forest storage.ForestReader
 	validator.History
@@ -164,7 +171,7 @@ func MakeGenesisState(db dbm.DB, genesisDoc *genesis.GenesisDoc) (*State, error)
 		perm := genAcc.Permissions
 		acc := &acm.Account{
 			Address:     genAcc.Address,
-			Balance:     genAcc.Amount,
+			Balance:     big.NewInt(int64(genAcc.Amount)),
 			Permissions: perm,
 		}
 		err := s.writeState.UpdateAccount(acc)

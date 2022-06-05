@@ -7,6 +7,7 @@ import (
 	fmt "fmt"
 	io "io"
 	math "math"
+	math_big "math/big"
 	math_bits "math/bits"
 	time "time"
 
@@ -1355,7 +1356,7 @@ var xxx_messageInfo_CallData proto.InternalMessageInfo
 
 func (m *CallData) GetValue() []byte {
 	if m != nil {
-		return m.Value
+		return m.Value.Uint64()
 	}
 	return nil
 }

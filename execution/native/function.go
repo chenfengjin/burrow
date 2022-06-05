@@ -2,6 +2,7 @@ package native
 
 import (
 	"fmt"
+	"math/big"
 	"reflect"
 	"runtime"
 	"strings"
@@ -71,11 +72,12 @@ func (f *Function) SetExternals(externals engine.Dispatcher) {
 	f.externals = engine.NewDispatchers(externals)
 }
 
-func (f *Function) Call(state engine.State, params engine.CallParams) ([]byte, error) {
-	return engine.Call(state, params, f.execute)
+func (f *Function) Call(state engine.State, params engine.CallParams,
+	transfer func(from, to crypto.Address, amount *big.Int) error) ([]byte, error) {
+	return Call(state, params, f.execute, transfer)
 }
 
-func (f *Function) execute(state engine.State, params engine.CallParams) ([]byte, error) {
+func (f *Function) execute(state engine.State, params engine.CallParams, transfer func(crypto.Address, crypto.Address, *big.Int) error) ([]byte, error) {
 	// check if we have permission to call this function
 	hasPermission, err := engine.HasPermission(state.CallFrame, params.Caller, f.PermFlag)
 	if err != nil {

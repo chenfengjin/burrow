@@ -26,12 +26,14 @@ type Contract struct {
 	*Code
 }
 
-func (c *Contract) Call(state engine.State, params engine.CallParams) ([]byte, error) {
-	return engine.Call(state, params, c.execute)
+func (c *Contract) Call(state engine.State, params engine.CallParams,
+	transfer func(crypto.Address, crypto.Address, *big.Int) error) ([]byte, error) {
+	return native.Call(state, params, c.execute, transfer)
 }
 
 // Executes the EVM code passed in the appropriate context
-func (c *Contract) execute(st engine.State, params engine.CallParams) ([]byte, error) {
+func (c *Contract) execute(st engine.State, params engine.CallParams,
+	transfer func(crypto.Address, crypto.Address, *big.Int) error) ([]byte, error) {
 	c.debugf("(%d) (%s) %s (code=%d) gas: %v (d) %X\n",
 		st.CallFrame.CallStackDepth(), params.Caller, params.Callee, c.Length(), *params.Gas, params.Input)
 
@@ -641,7 +643,7 @@ func (c *Contract) execute(st engine.State, params engine.CallParams) ([]byte, e
 					Input:  input,
 					Value:  *contractValue,
 					Gas:    params.Gas,
-				})
+				}, transfer)
 			if callErr != nil {
 				stack.Push(Zero256)
 				// Note we both set the return buffer and return the result normally in order to service the error to
@@ -687,6 +689,114 @@ func (c *Contract) execute(st engine.State, params engine.CallParams) ([]byte, e
 				Value:    value,
 				Gas:      gasLimit,
 			})
+			// Get the arguments from the memory
+			// EVM contract
+			maybe.PushError(useGasNegative(params.Gas, native.GasGetAccount))
+			// since CALL is used also for sending funds,
+			// acc may not exist yet. This is an errors.CodedError for
+			// CALLCODE, but not for CALL, though I don't think
+			// ethereum actually cares
+			acc := getAccount(st.CallFrame, maybe, target)
+			if acc == nil {
+				if op != CALL {
+					maybe.PushError(errors.Codes.UnknownAddress)
+					continue
+				}
+				// We're sending funds to a new account so we must create it first
+				if maybe.PushError(createAccount(st.CallFrame, params.Callee, target)) {
+					continue
+				}
+				acc = mustGetAccount(st.CallFrame, maybe, target)
+			}
+
+			// Establish a stack frame and perform the call
+			childCallFrame, err := st.CallFrame.NewFrame()
+			if maybe.PushError(err) {
+				continue
+			}
+			childState := engine.State{
+				CallFrame:  childCallFrame,
+				Blockchain: st.Blockchain,
+				EventSink:  st.EventSink,
+			}
+			// Ensure that gasLimit is reasonable
+			if *params.Gas < gasLimit {
+				// EIP150 - the 63/64 rule - rather than errors.CodedError we pass this specified fraction of the total available gas
+				gasLimit = *params.Gas - *params.Gas/64
+			}
+			// NOTE: we will return any used gas later.
+			*params.Gas -= gasLimit
+
+			// Setup callee params for call type
+
+			calleeParams := engine.CallParams{
+				Origin: params.Origin,
+				Input:  memory.Read(inOffset, inSize),
+				Value:  value,
+				Gas:    &gasLimit,
+			}
+
+			// Set up the caller/callee context
+			switch op {
+			case CALL:
+				// Calls contract at target from this contract normally
+				// Value: transferred
+				// Caller: this contract
+				// Storage: target
+				// Code: from target
+
+				calleeParams.CallType = exec.CallTypeCall
+				calleeParams.Caller = params.Callee
+				calleeParams.Callee = target
+
+			case STATICCALL:
+				// Calls contract at target from this contract with no state mutation
+				// Value: not transferred
+				// Caller: this contract
+				// Storage: target (read-only)
+				// Code: from target
+
+				calleeParams.CallType = exec.CallTypeStatic
+				calleeParams.Caller = params.Callee
+				calleeParams.Callee = target
+
+				childState.CallFrame.ReadOnly()
+				childState.EventSink = exec.NewLogFreeEventSink(childState.EventSink)
+
+			case CALLCODE:
+				// Calling this contract from itself as if it had the code at target
+				// Value: transferred
+				// Caller: this contract
+				// Storage: this contract
+				// Code: from target
+
+				calleeParams.CallType = exec.CallTypeCode
+				calleeParams.Caller = params.Callee
+				calleeParams.Callee = params.Callee
+
+			case DELEGATECALL:
+				// Calling this contract from the original caller as if it had the code at target
+				// Value: not transferred
+				// Caller: original caller
+				// Storage: this contract
+				// Code: from target
+
+				calleeParams.CallType = exec.CallTypeDelegate
+				calleeParams.Caller = params.Caller
+				calleeParams.Callee = params.Callee
+
+			default:
+				panic(fmt.Errorf("switch statement should be exhaustive so this should not have been reached"))
+			}
+
+			var callErr error
+			returnData, callErr = c.Dispatch(acc).Call(childState, calleeParams, transfer)
+
+			if callErr == nil {
+				// Sync error is a hard stop
+				maybe.PushError(childState.CallFrame.Sync())
+			}
+
 			// Push result
 			if err != nil {
 				c.debugf("error from nested sub-call (depth: %v): %s\n", st.CallFrame.CallStackDepth(), err)

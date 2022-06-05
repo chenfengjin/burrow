@@ -6,6 +6,7 @@ package execution
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"runtime/debug"
 	"sync"
 
@@ -305,7 +306,7 @@ func (exe *executor) validateInputsAndStorePublicKeys(txEnv *txs.Envelope) error
 				"so expected input to have sequence %d", in, in.Sequence, acc.Sequence, acc.Sequence+1)
 		}
 		// Check amount
-		if txEnv.Tx.Type() != payload.TypeUnbond && acc.Balance < in.Amount {
+		if txEnv.Tx.Type() != payload.TypeUnbond && acc.Balance.Cmp(big.NewInt(int64(in.Amount))) == -1 {
 			return errors.Codes.InsufficientFunds
 		}
 		// Check for Input permission

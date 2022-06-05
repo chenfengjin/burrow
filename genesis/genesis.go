@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"sort"
 	"time"
 
@@ -79,7 +80,7 @@ func PermissionsAccount(globalPerms permission.AccountPermissions) *acm.Account 
 
 	return &acm.Account{
 		Address:     acm.GlobalPermissionsAddress,
-		Balance:     1337,
+		Balance:     big.NewInt(1337),
 		Permissions: globalPerms,
 	}
 }
@@ -155,7 +156,7 @@ func GenesisAccountFromAccount(name string, account *acm.Account) Account {
 		Permissions: account.Permissions,
 		BasicAccount: BasicAccount{
 			Address: account.Address,
-			Amount:  account.Balance,
+			Amount:  account.Balance.Uint64(),
 		},
 	}
 }
@@ -177,7 +178,7 @@ func (genesisAccount *Account) AcmAccount() *acm.Account {
 	return &acm.Account{
 		Address:     genesisAccount.Address,
 		PublicKey:   genesisAccount.PublicKey,
-		Balance:     genesisAccount.Amount,
+		Balance:     big.NewInt(int64(genesisAccount.Amount)),
 		Permissions: genesisAccount.Permissions,
 	}
 }

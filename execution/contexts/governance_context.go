@@ -73,7 +73,7 @@ func (ctx *GovernanceContext) UpdateAccount(account *acm.Account, update *spec.T
 		AccountUpdate: update,
 	}
 	if update.Balances().HasNative() {
-		account.Balance = update.Balances().GetNative(0)
+		account.Balance = big.NewInt(int64(update.Balances().GetNative(0)))
 	}
 	if update.Balances().HasPower() {
 		if update.PublicKey == nil {

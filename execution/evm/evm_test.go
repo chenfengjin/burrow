@@ -1688,7 +1688,7 @@ func makeAccountWithCode(t testing.TB, st acmstate.ReaderWriter, name string, co
 
 func addToBalance(t testing.TB, st acmstate.ReaderWriter, address crypto.Address, amount uint64) {
 	err := engine.UpdateAccount(st, address, func(account *acm.Account) error {
-		return account.AddToBalance(amount)
+		return account.AddToBalance(new(big.Int).SetUint64(amount))
 	})
 	require.NoError(t, err)
 }

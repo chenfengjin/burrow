@@ -7,6 +7,7 @@ import (
 	"github.com/hyperledger/burrow/crypto"
 	"github.com/hyperledger/burrow/execution/engine"
 	"github.com/hyperledger/burrow/execution/errors"
+	"math/big"
 )
 
 // This wrapper provides a state that behaves 'as if' the natives were stored directly in state.
@@ -47,6 +48,10 @@ func (s *State) RemoveAccount(address crypto.Address) error {
 		return err
 	}
 	return s.backend.RemoveAccount(address)
+}
+
+func (s *State) Transfer(from, to crypto.Address, amount *big.Int) error {
+	return s.backend.Transfer(from, to, amount)
 }
 
 func (s *State) GetStorage(address crypto.Address, key binary.Word256) ([]byte, error) {

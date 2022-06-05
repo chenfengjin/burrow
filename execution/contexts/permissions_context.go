@@ -2,6 +2,7 @@ package contexts
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/acm/acmstate"
@@ -103,8 +104,9 @@ func (ctx *PermissionsContext) Execute(txe *exec.TxExecution, p payload.Payload)
 	}
 
 	// Good!
-	inAcc.Balance -= value
-	err = inAcc.SubtractFromBalance(value)
+	valueBigInt := big.NewInt(int64(value))
+	inAcc.Balance = inAcc.Balance.Sub(inAcc.Balance, valueBigInt)
+	err = inAcc.SubtractFromBalance(valueBigInt)
 	if err != nil {
 		return errors.Errorf(errors.Codes.InsufficientFunds,
 			"Input account does not have sufficient balance to cover input amount: %v", ctx.tx.Input)

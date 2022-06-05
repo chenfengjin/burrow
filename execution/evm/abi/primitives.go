@@ -2,6 +2,7 @@ package abi
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -588,10 +589,18 @@ func (e EVMBytes) getGoType() interface{} {
 
 func (e EVMBytes) pack(v interface{}) ([]byte, error) {
 	b, ok := v.([]byte)
+	var err error
 	if !ok {
 		s, ok := v.(string)
 		if ok {
-			b = []byte(s)
+			if len(s) > 2 && s[:2] == "0x" {
+				b, err = hex.DecodeString(s[2:])
+				if err != nil {
+					return nil, fmt.Errorf("cannot map from %s to EVM bytes", s)
+				}
+			} else {
+				b = []byte(s)
+			}
 		} else {
 			return nil, fmt.Errorf("cannot map from %s to EVM bytes", reflect.ValueOf(v).Kind().String())
 		}

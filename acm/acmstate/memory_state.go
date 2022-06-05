@@ -6,6 +6,7 @@ import (
 	"github.com/hyperledger/burrow/crypto"
 	"github.com/hyperledger/burrow/execution/errors"
 	"github.com/hyperledger/burrow/permission"
+	"math/big"
 )
 
 type MemoryState struct {
@@ -52,6 +53,10 @@ func (ms *MemoryState) SetMetadata(metahash MetadataHash, metadata string) error
 
 func (ms *MemoryState) RemoveAccount(address crypto.Address) error {
 	delete(ms.Accounts, address)
+	return nil
+}
+
+func (ms *MemoryState) Transfer(from, to crypto.Address, amount *big.Int) error {
 	return nil
 }
 

@@ -5,6 +5,7 @@ package acmstate
 
 import (
 	"fmt"
+	"math/big"
 	"sort"
 	"sync"
 
@@ -106,6 +107,10 @@ func (cache *Cache) RemoveAccount(address crypto.Address) error {
 		return fmt.Errorf("RemoveAccount on a removed account: %s", address)
 	}
 	accInfo.removed = true
+	return nil
+}
+
+func (cache *Cache) Transfer(from, to crypto.Address, amount *big.Int) error {
 	return nil
 }
 

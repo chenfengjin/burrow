@@ -7,6 +7,7 @@ import (
 	fmt "fmt"
 	io "io"
 	math "math"
+	math_big "math/big"
 	math_bits "math/bits"
 
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -36,7 +37,7 @@ type Account struct {
 	// Sequence counts the number of transactions that have been accepted from this account
 	Sequence uint64 `protobuf:"varint,3,opt,name=Sequence,proto3" json:"Sequence,omitempty"`
 	// The account's current native token balance
-	Balance uint64 `protobuf:"varint,4,opt,name=Balance,proto3" json:"Balance,omitempty"`
+	Balance *math_big.Int `protobuf:"varint,4,opt,name=Balance,proto3" json:"Balance,omitempty"`
 	// We expect exactly one of EVMCode, WASMCode, and NativeName to be non-empty
 	// EVM bytecode
 	EVMCode     Bytecode                      `protobuf:"bytes,5,opt,name=EVMCode,proto3,customtype=Bytecode" json:"EVMCode"`
@@ -104,7 +105,7 @@ func (m *Account) GetSequence() uint64 {
 
 func (m *Account) GetBalance() uint64 {
 	if m != nil {
-		return m.Balance
+		return m.Balance.Uint64()
 	}
 	return 0
 }
@@ -326,8 +327,8 @@ func (m *Account) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0x2a
-	if m.Balance != 0 {
-		i = encodeVarintAcm(dAtA, i, uint64(m.Balance))
+	if m.Balance.Uint64() != 0 {
+		i = encodeVarintAcm(dAtA, i, uint64(m.Balance.Uint64()))
 		i--
 		dAtA[i] = 0x20
 	}
@@ -441,8 +442,8 @@ func (m *Account) Size() (n int) {
 	if m.Sequence != 0 {
 		n += 1 + sovAcm(uint64(m.Sequence))
 	}
-	if m.Balance != 0 {
-		n += 1 + sovAcm(uint64(m.Balance))
+	if m.Balance.Uint64() != 0 {
+		n += 1 + sovAcm(uint64(m.Balance.Uint64()))
 	}
 	l = m.EVMCode.Size()
 	n += 1 + l + sovAcm(uint64(l))
@@ -619,7 +620,8 @@ func (m *Account) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Balance", wireType)
 			}
-			m.Balance = 0
+			//m.Balance = math_big.NewInt(0)
+			balance := uint64(0)
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowAcm
@@ -629,11 +631,12 @@ func (m *Account) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Balance |= uint64(b&0x7F) << shift
+				balance |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			m.Balance = math_big.NewInt(int64(balance))
 		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field EVMCode", wireType)

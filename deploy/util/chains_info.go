@@ -65,7 +65,7 @@ func AccountsInfo(account, field string, client *def.Client, logger *logging.Log
 			}
 		}
 	} else if field == "balance" {
-		s = itoaU64(acc.Balance)
+		s = itoaU64(acc.Balance.Uint64())
 	}
 
 	if err != nil {

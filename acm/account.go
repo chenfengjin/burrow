@@ -6,6 +6,7 @@ package acm
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 	"reflect"
 
 	"github.com/gogo/protobuf/proto"
@@ -33,21 +34,21 @@ func (acc *Account) GetAddress() crypto.Address {
 	return acc.Address
 }
 
-func (acc *Account) AddToBalance(amount uint64) error {
-	if binary.IsUint64SumOverflow(acc.Balance, amount) {
-		return errors.Errorf(errors.Codes.IntegerOverflow,
-			"uint64 overflow: attempt to add %v to the balance of %s", amount, acc.Address)
-	}
-	acc.Balance += amount
+func (acc *Account) AddToBalance(amount *big.Int) error {
+	//if binary.IsUint64SumOverflow(acc.Balance, amount) {
+	//	return errors.Errorf(errors.Codes.IntegerOverflow,
+	//		"uint64 overflow: attempt to add %v to the balance of %s", amount, acc.Address)
+	//}
+	acc.Balance = acc.Balance.Add(acc.Balance, amount)
 	return nil
 }
 
-func (acc *Account) SubtractFromBalance(amount uint64) error {
-	if amount > acc.Balance {
+func (acc *Account) SubtractFromBalance(amount *big.Int) error {
+	if amount.Cmp(acc.Balance) == 1 {
 		return errors.Errorf(errors.Codes.InsufficientBalance,
 			"insufficient funds: attempt to subtract %v from the balance of %s", amount, acc.Address)
 	}
-	acc.Balance -= amount
+	acc.Balance = acc.Balance.Sub(acc.Balance, amount)
 	return nil
 }
 

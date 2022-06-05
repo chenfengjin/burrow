@@ -2,6 +2,7 @@ package contexts
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/acm/acmstate"
@@ -79,7 +80,7 @@ func getOrMakeOutput(accountGetter acmstate.AccountGetter, accs map[crypto.Addre
 		acc = &acm.Account{
 			Address:     outputAddress,
 			Sequence:    0,
-			Balance:     0,
+			Balance:     big.NewInt(0),
 			Permissions: permission.ZeroAccountPermissions,
 		}
 	}
@@ -102,11 +103,11 @@ func adjustByInputs(accs map[crypto.Address]*acm.Account, ins []*payload.TxInput
 		if acc == nil {
 			return fmt.Errorf("adjustByInputs() expects account in accounts, but account %s not found", in.Address)
 		}
-		if acc.Balance < in.Amount {
+		if acc.Balance.Cmp(big.NewInt(int64(in.Amount))) == -1 {
 			return fmt.Errorf("adjustByInputs() expects sufficient funds but account %s only has balance %v and "+
 				"we are deducting %v", in.Address, acc.Balance, in.Amount)
 		}
-		err := acc.SubtractFromBalance(in.Amount)
+		err := acc.SubtractFromBalance(big.NewInt(int64(in.Amount)))
 		if err != nil {
 			return err
 		}
@@ -121,7 +122,7 @@ func adjustByOutputs(accs map[crypto.Address]*acm.Account, outs []*payload.TxOut
 			return fmt.Errorf("adjustByOutputs() expects account in accounts, but account %s not found",
 				out.Address)
 		}
-		err := acc.AddToBalance(out.Amount)
+		err := acc.AddToBalance(big.NewInt(int64(out.Amount)))
 		if err != nil {
 			return err
 		}
