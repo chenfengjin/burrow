@@ -3,6 +3,7 @@ package engine
 import (
 	"math/big"
 
+	"github.com/hyperledger/burrow/crypto"
 	"github.com/hyperledger/burrow/execution/errors"
 	"github.com/hyperledger/burrow/execution/exec"
 	"github.com/hyperledger/burrow/permission"
@@ -148,7 +149,12 @@ func CallFromSite(st State, dispatcher Dispatcher, site CallParams, target CallP
 	if dispatch == nil {
 		return nil, errors.Errorf(errors.Codes.NotCallable, "cannot call: %v", acc.Address)
 	}
-	returnData, err := dispatch.Call(childState, target)
+	// TODO
+	transfer := func(crypto.Address, crypto.Address, *big.Int) error {
+		return nil
+	}
+
+	returnData, err := dispatch.Call(childState, target, transfer)
 
 	if err == nil {
 		// Sync error is a hard stop

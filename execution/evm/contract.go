@@ -28,7 +28,9 @@ type Contract struct {
 
 func (c *Contract) Call(state engine.State, params engine.CallParams,
 	transfer func(crypto.Address, crypto.Address, *big.Int) error) ([]byte, error) {
-	return native.Call(state, params, c.execute, transfer)
+	return []byte(""), nil
+	// 	TODO
+	// return native.Call(state, params, c.execute, transfer)
 }
 
 // Executes the EVM code passed in the appropriate context
@@ -336,7 +338,7 @@ func (c *Contract) execute(st engine.State, params engine.CallParams,
 			address := stack.PopAddress()
 			maybe.PushError(engine.UseGasNegative(params.Gas, engine.GasGetAccount))
 			balance := engine.MustGetAccount(st.CallFrame, maybe, address).Balance
-			stack.Push64(balance)
+			stack.Push64(balance.Uint64())
 			c.debugf(" => %v (%v)\n", balance, address)
 
 		case ORIGIN: // 0x32
@@ -691,22 +693,24 @@ func (c *Contract) execute(st engine.State, params engine.CallParams,
 			})
 			// Get the arguments from the memory
 			// EVM contract
-			maybe.PushError(useGasNegative(params.Gas, native.GasGetAccount))
+			maybe.PushError(engine.UseGasNegative(params.Gas, engine.GasGetAccount))
 			// since CALL is used also for sending funds,
 			// acc may not exist yet. This is an errors.CodedError for
 			// CALLCODE, but not for CALL, though I don't think
 			// ethereum actually cares
-			acc := getAccount(st.CallFrame, maybe, target)
+			acc := engine.GetAccount(st.CallFrame, maybe, target)
 			if acc == nil {
 				if op != CALL {
 					maybe.PushError(errors.Codes.UnknownAddress)
 					continue
 				}
 				// We're sending funds to a new account so we must create it first
-				if maybe.PushError(createAccount(st.CallFrame, params.Callee, target)) {
+				if maybe.PushError(engine.CreateAccount(st.CallFrame, params.Callee)) {
+
+					// if maybe.PushError(engine.CreateAccount(st.CallFrame, params.Callee, target)) {
 					continue
 				}
-				acc = mustGetAccount(st.CallFrame, maybe, target)
+				acc = engine.MustGetAccount(st.CallFrame, maybe, target)
 			}
 
 			// Establish a stack frame and perform the call
@@ -720,12 +724,14 @@ func (c *Contract) execute(st engine.State, params engine.CallParams,
 				EventSink:  st.EventSink,
 			}
 			// Ensure that gasLimit is reasonable
-			if *params.Gas < gasLimit {
+			if params.Gas.Uint64() < gasLimit.Uint64() {
 				// EIP150 - the 63/64 rule - rather than errors.CodedError we pass this specified fraction of the total available gas
-				gasLimit = *params.Gas - *params.Gas/64
+				// TODO
+				gasLimit = params.Gas
+				// gasLimit = *params.Gas - *params.Gas/64
 			}
 			// NOTE: we will return any used gas later.
-			*params.Gas -= gasLimit
+			params.Gas = params.Gas.Sub(params.Gas, gasLimit)
 
 			// Setup callee params for call type
 
@@ -733,7 +739,7 @@ func (c *Contract) execute(st engine.State, params engine.CallParams,
 				Origin: params.Origin,
 				Input:  memory.Read(inOffset, inSize),
 				Value:  value,
-				Gas:    &gasLimit,
+				Gas:    gasLimit,
 			}
 
 			// Set up the caller/callee context

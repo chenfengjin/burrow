@@ -1,11 +1,12 @@
 package native
 
 import (
+	"math/big"
+
 	"github.com/hyperledger/burrow/crypto"
 	"github.com/hyperledger/burrow/execution/engine"
 	"github.com/hyperledger/burrow/execution/errors"
 	"github.com/hyperledger/burrow/execution/exec"
-	"math/big"
 )
 
 // Call provides a standard wrapper for implementing Callable.Call with appropriate error handling and event firing.
@@ -15,7 +16,7 @@ func Call(state engine.State, params engine.CallParams,
 	maybe := new(errors.Maybe)
 	if params.CallType == exec.CallTypeCall || params.CallType == exec.CallTypeCode {
 		// NOTE: Delegate and Static CallTypes do not transfer the value to the callee.
-		maybe.PushError(transfer(params.Caller, params.Callee, params.Value))
+		maybe.PushError(transfer(params.Caller, params.Callee, &params.Value))
 	}
 
 	output := maybe.Bytes(execute(state, params, transfer))
@@ -33,8 +34,8 @@ func FireCallEvent(callFrame *engine.CallFrame, callErr error, eventSink exec.Ev
 			Caller: params.Caller,
 			Callee: params.Callee,
 			Data:   params.Input,
-			Value:  params.Value,
-			Gas:    *params.Gas,
+			Value:  params.Value.Bytes(),
+			Gas:    params.Gas.Bytes(),
 		},
 		Origin:     params.Origin,
 		StackDepth: callFrame.CallStackDepth(),
